@@ -28,8 +28,26 @@ resized = resize_image(img, 100)
 gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
 blurried = cv2.medianBlur(gray, 5)
 
+cv2.createTrackbar('thresh', 'image', 0, 255, lambda: None)
+cv2.createTrackbar('maxval', 'image', 255, 255, lambda: None)
+
 while(True):
-    cv2.imshow('image', gray)
+    thresh_value = cv2.getTrackbarPos('thresh','image')
+    maxval = cv2.getTrackbarPos('maxval','image')
+
+    new_blurried = blurried.copy()
+
+    ret,thresh = cv2.threshold(blurried, thresh_value, maxval, 0)
+    inv_thresh = cv2.bitwise_not(thresh)
+
+    mser = cv2.MSER_create()
+    regions = mser.detectRegions(inv_thresh)
+    hulls = [cv2.convexHull(p.reshape(-1, 1, 2)) for p in regions[0]]
+    contours = hulls
+
+    cv2.drawContours(new_blurried, contours, -1, (0,0,255), 1)
+
+    cv2.imshow('image', np.hstack([gray, inv_thresh, new_blurried]))
 
     k = cv2.waitKey(1) & 0xFF # Esc
     if k == 27:
