@@ -35,11 +35,15 @@ gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
 blurried = cv2.medianBlur(gray, 5)
 
 cv2.createTrackbar('thresh', 'image', 0, 255, lambda: None)
-cv2.createTrackbar('maxval', 'image', 255, 255, lambda: None)
+
+is_calibrating = True
+
+thresh_value = 0
+maxval = 255
 
 while(True):
+    if not is_calibrating:
     thresh_value = cv2.getTrackbarPos('thresh','image')
-    maxval = cv2.getTrackbarPos('maxval','image')
 
     new_blurried = blurried.copy()
 
@@ -56,6 +60,9 @@ while(True):
 
      # finding center of contour
     if contours:
+        is_calibrating = False
+        cv2.setTrackbarPos('thresh', 'image', thresh_value)
+
         # compute the center of the contour
         cnt = contours[0] # selects the roundest contour
 
@@ -65,9 +72,8 @@ while(True):
         
         # draw the center of the contour on the image
         cv2.circle(new_blurried, (cX, cY), 7, (10, 10, 255), -1)
-    else:
-        if thresh_value < 255:
-            cv2.setTrackbarPos('thresh','image', thresh_value + 1)
+    elif thresh_value < 255 and is_calibrating:
+        thresh_value += 1
             continue
 
     cv2.drawContours(new_blurried, contours, -1, (0,0,255), 1)
