@@ -17,10 +17,27 @@ image_path = args.image_path
 img = cv2.imread(image_path)
 cv2.namedWindow('image')
 
-def resize_image(img, pct):
-    width = int(img.shape[1] * pct / 100)
-    height = int(img.shape[0] * pct / 100)
+def resize_image(img):
+    max_height = 400
+    max_width = 400
+
+    width = int(img.shape[1])
+    height = int(img.shape[0])
+
+    aspect_ratio = width / height
+
     dim = (width, height)
+    
+    if height > max_height:
+        new_heigth = 400
+        new_width = int(new_heigth * aspect_ratio)
+        dim = (new_width, new_heigth)
+    
+    if width > max_width:
+        new_width = 400
+        new_heigth = int(new_width / aspect_ratio)
+        dim = (new_width, new_heigth)
+
     resized = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
     return resized
 
@@ -30,7 +47,7 @@ def circularity(contour):
 
     return 4 * math.pi * area / perimeter**2
 
-resized = resize_image(img, 100)
+resized = resize_image(img)
 gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
 blurried = cv2.medianBlur(gray, 5)
 
@@ -46,6 +63,7 @@ while(True):
     thresh_value = cv2.getTrackbarPos('thresh','image')
 
     new_blurried = blurried.copy()
+    new_img = resized.copy()
 
     ret,thresh = cv2.threshold(blurried, thresh_value, maxval, 0)
     inv_thresh = cv2.bitwise_not(thresh)
@@ -71,14 +89,16 @@ while(True):
         cY = int(M["m01"] / M["m00"])
         
         # draw the center of the contour on the image
-        cv2.circle(new_blurried, (cX, cY), 7, (10, 10, 255), -1)
+        cv2.circle(new_img, (cX, cY), 7, (10, 10, 255), -1)
     elif thresh_value < 255 and is_calibrating:
         thresh_value += 1
             continue
 
-    cv2.drawContours(new_blurried, contours, -1, (0,0,255), 1)
+    cv2.drawContours(new_img, contours, -1, (0,0,255), 1)
 
-    cv2.imshow('image', np.hstack([gray, inv_thresh, new_blurried]))
+    bgr_gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+    bgr_inv_thresh = cv2.cvtColor(inv_thresh, cv2.COLOR_GRAY2BGR)
+    cv2.imshow('image', np.hstack([bgr_gray, bgr_inv_thresh, new_img]))
 
     k = cv2.waitKey(1) & 0xFF # Esc
     if k == 27:
