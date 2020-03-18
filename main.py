@@ -24,6 +24,12 @@ def resize_image(img, pct):
     resized = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
     return resized
 
+def circularity(contour):
+    area = cv2.contourArea(contour)
+    perimeter = cv2.arcLength(contour,True)
+
+    return 4 * math.pi * area / perimeter**2
+
 resized = resize_image(img, 100)
 gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
 blurried = cv2.medianBlur(gray, 5)
@@ -44,6 +50,25 @@ while(True):
     regions = mser.detectRegions(inv_thresh)
     hulls = [cv2.convexHull(p.reshape(-1, 1, 2)) for p in regions[0]]
     contours = hulls
+
+    contours = [cnt for cnt in contours if circularity(cnt) > 0.9]
+    contours.sort(key=circularity, reverse=True) # orders from most circular to least
+
+     # finding center of contour
+    if contours:
+        # compute the center of the contour
+        cnt = contours[0] # selects the roundest contour
+
+        M = cv2.moments(cnt)
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
+        
+        # draw the center of the contour on the image
+        cv2.circle(new_blurried, (cX, cY), 7, (10, 10, 255), -1)
+    else:
+        if thresh_value < 255:
+            cv2.setTrackbarPos('thresh','image', thresh_value + 1)
+            continue
 
     cv2.drawContours(new_blurried, contours, -1, (0,0,255), 1)
 
