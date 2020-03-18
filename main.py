@@ -2,9 +2,18 @@ import cv2
 import numpy as np
 import math
 import sys
+import argparse
 
 
-image_path = sys.argv[1]
+parser = argparse.ArgumentParser(description='Receives an image or video, and returns the position of the pupil. If empty, uses the webcam.')
+parser.add_argument('--image_path', type=str, help='Path to an image file')
+parser.add_argument('--video_path', type=str, help='Path to an video file')
+args = parser.parse_args()
+
+if args.image_path and args.video_path:
+    parser.error("image_path and video_path can't be used at the same time.")
+
+image_path = args.image_path
 img = cv2.imread(image_path)
 cv2.namedWindow('image')
 
